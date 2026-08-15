@@ -5,11 +5,133 @@ title: Configuration Guide
 
 # Configuration Guide
 
-Horizon is configured through two files: a `.env` file for API keys and a `data/config.json` file for sources, AI provider, and filtering options.
+Horizon is configured through a `.env` file for secrets, a JSON file for runtime settings, and processing profiles for analysis and enrichment prompts. The JSON file defaults to `data/config.json`; profiles default to `profiles/`.
+
+## Configuration Paths
+
+`horizon`, `horizon-wizard`, and `horizon-webhook` all resolve configuration and state paths the same way:
+
+| Option | Effect |
+| --- | --- |
+| `-d`, `--data-dir PATH` | Changes the state directory used for summaries, subscribers, and the default `<data-dir>/config.json` path. |
+| `-c`, `--config PATH` | Uses an explicit config file without changing the state directory. |
+
+```bash
+uv run horizon --data-dir /srv/horizon
+uv run horizon --config /etc/horizon/config.json
+uv run horizon --data-dir /srv/horizon --config /etc/horizon/config.json
+```
+
+When both options are present, configuration is loaded from `--config`, while summaries and subscribers remain under `--data-dir`. Because this logic is identical across all three CLIs, passing the same `-d`/`-c` flags to each one keeps them pointed at the same files — for example, generating a config with `horizon-wizard --data-dir /srv/horizon`, then running `horizon --data-dir /srv/horizon` and testing with `horizon-webhook --data-dir /srv/horizon`.
+
+Without either flag, all three default to `data/config.json`. To bootstrap a custom location without the wizard, initialize it manually:
+
+```bash
+mkdir -p /etc/horizon
+cp data/config.example.json /etc/horizon/config.json
+```
+
+## Interactive Wizard
+
+`horizon-wizard` asks about your interests and generates `data/config.json` from matched presets and, optionally, AI recommendations:
+
+```bash
+uv run horizon-wizard
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-d`, `--data-dir PATH` | `data` | Path to the data directory |
+| `-c`, `--config PATH` | `<data-dir>/config.json` | Path to config file |
+| `-l`, `--log-level LEVEL` | `WARNING` | Logging level (DEBUG/INFO/WARNING/ERROR/CRITICAL) |
+
+## Terminal Icons
+
+The `display.icon_style` setting controls icons printed to the terminal:
+
+```json
+{
+  "display": {
+    "icon_style": "nerd"
+  }
+}
+```
+
+Supported styles:
+
+| Value | Description |
+| --- | --- |
+| `emoji` | Color emoji icons. This is the default when `display` is omitted. |
+| `nerd` | Monochrome Nerd Font icons. Requires a Nerd Font in the terminal. |
+| `ascii` | ASCII-only markers for terminals without Unicode icon support. |
+
+This setting affects terminal output only. Icons embedded in generated Markdown
+and webhook message content are unchanged.
+
+## Processing Profiles
+
+The `processing` section controls profile discovery and the fallback used when
+automatic matching cannot select a profile:
+
+```json
+{
+  "processing": {
+    "profiles_dir": "profiles",
+    "default_profile": "tech-news",
+    "profile_settings": {
+      "tech-news": {
+        "threshold": 7.0,
+        "topic_dedup": true
+      },
+      "tech-blog": {
+        "threshold": 4.0,
+        "topic_dedup": false
+      }
+    }
+  }
+}
+```
+
+- `profiles_dir`: Directory containing one subdirectory per processing profile.
+- `default_profile`: ID of a profile present in `profiles_dir`.
+- `profile_settings`: User preferences keyed by profile ID. `threshold` accepts
+  `0` through `10` or `null` for no score filter; `topic_dedup` defaults to
+  `true`. Unknown profile IDs are rejected when Horizon starts.
+
+Each profile owns its matching, analysis, and enrichment behavior. Runtime
+filtering preferences stay in the main JSON configuration. See [Processing
+Profiles](profiles.md) for the file layout, complete schema, source routing
+rules, and block tool permissions.
 
 ## AI Providers
 
-Configure which AI model scores and summarizes your content.
+Configure which AI model analyzes and enriches your content.
+
+`api_key_env` is always an environment variable name, not the API key value.
+Store secrets in `.env` or your shell environment, then point `api_key_env` at
+that variable:
+
+```bash
+OPENAI_API_KEY=sk-your-key
+GOOGLE_API_KEY=your-gemini-key
+```
+
+When Horizon starts, environment variables have priority because
+the active config file does not store the secret. For local VS Code runs, create
+`.env` in the repository root and launch Horizon from that same root directory.
+
+Common API key variable names:
+
+| Provider | `api_key_env` value |
+| --- | --- |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| OpenAI | `OPENAI_API_KEY` |
+| Azure OpenAI | `AZURE_OPENAI_API_KEY` |
+| Gemini | `GOOGLE_API_KEY` |
+| MiniMax | `MINIMAX_API_KEY` |
+| Aliyun DashScope | `DASHSCOPE_API_KEY` |
+| Doubao | `DOUBAO_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
 
 **Anthropic Claude**:
 
@@ -37,6 +159,19 @@ Configure which AI model scores and summarizes your content.
 }
 ```
 
+**Gemini**:
+
+```json
+{
+  "ai": {
+    "provider": "gemini",
+    "model": "gemini-2.0-flash",
+    "api_key_env": "GOOGLE_API_KEY",
+    "throttle_sec": 0
+  }
+}
+```
+
 **Azure OpenAI**:
 
 ```json
@@ -56,18 +191,46 @@ Set `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_ENDPOINT` in your `.env`. The `mode
 
 **MiniMax**:
 
+The built-in provider defaults to `MiniMax-M3` and the global
+OpenAI-compatible endpoint:
+
 ```json
 {
   "ai": {
     "provider": "minimax",
-    "model": "MiniMax-M2.7",
+    "model": "MiniMax-M3",
     "api_key_env": "MINIMAX_API_KEY",
+    "base_url": "https://api.minimax.io/v1",
     "throttle_sec": 0
   }
 }
 ```
 
-Available models: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`, `MiniMax-M2.5`, `MiniMax-M2.5-highspeed`
+Available models: `MiniMax-M3`, `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`.
+
+Use the endpoint for your account region and preferred compatible API:
+
+| Region | OpenAI-compatible base URL | Anthropic-compatible base URL |
+| --- | --- | --- |
+| Global | `https://api.minimax.io/v1` | `https://api.minimax.io/anthropic` |
+| China | `https://api.minimaxi.com/v1` | `https://api.minimaxi.com/anthropic` |
+
+For the Anthropic-compatible API, keep `provider` set to `minimax` and pass
+the base URL directly without adding `/v1`. Horizon selects its Anthropic
+client for this endpoint, and the SDK appends `/v1/messages` when sending a
+request:
+
+```json
+{
+  "ai": {
+    "provider": "minimax",
+    "model": "MiniMax-M3",
+    "api_key_env": "MINIMAX_API_KEY",
+    "base_url": "https://api.minimax.io/anthropic",
+    "throttle_sec": 0
+  }
+}
+```
 
 **Aliyun DashScope** (OpenAI-compatible):
 
@@ -84,9 +247,29 @@ Available models: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`, `MiniMax-M2.5`, `Min
 
 Use the [DashScope compatible-mode](https://help.aliyun.com/zh/dashscope/developer-reference/use-dashscope-by-calling-openai-api) endpoint. Set `DASHSCOPE_API_KEY` in your `.env`. Optional: set `base_url` to override the default `https://dashscope.aliyuncs.com/compatible-mode/v1`.
 
+**Ollama**:
+
+```json
+{
+  "ai": {
+    "provider": "ollama",
+    "model": "llama3.1",
+    "api_key_env": "",
+    "base_url": "http://192.168.1.10:11434",
+    "throttle_sec": 0
+  }
+}
+```
+
+Omit `base_url` to use the default `http://localhost:11434/v1`.
+For remote Ollama servers, set `ai.base_url` in the active config file or set
+`HORIZON_OLLAMA_BASE_URL` in `.env`. `OLLAMA_BASE_URL` and `OLLAMA_HOST` are
+also recognized. If the value omits `/v1`, Horizon appends it automatically
+for Ollama's OpenAI-compatible endpoint.
+
 ### AI throttling
 
-If your model has a strict per-minute request cap, you can slow the scorer down in `data/config.json`:
+If your model has a strict per-minute request cap, you can slow the scorer down in the active config file:
 
 ```json
 {
@@ -100,6 +283,26 @@ If your model has a strict per-minute request cap, you can slow the scorer down 
 - `4.5` is a reasonable starting point for free-tier models capped around 15 requests per minute.
 - Set it back to `0` if you have enough throughput headroom and want maximum speed.
 
+### AI Concurrency
+
+By default, AI scoring and enrichment run one item at a time. If your API endpoint supports concurrent requests, you can increase throughput:
+
+```json
+{
+  "ai": {
+    "analysis_concurrency": 4,
+    "enrichment_concurrency": 2
+  }
+}
+```
+
+- `analysis_concurrency`: Number of items scored in parallel. Default is `1`.
+- `enrichment_concurrency`: Number of high-scoring items enriched in parallel. Default is `1`.
+- Both values are clamped to a minimum of `1`.
+- Preserve the existing retry behavior per item.
+- Result ordering is preserved regardless of concurrency.
+- If you also use `throttle_sec`, each concurrent task sleeps independently after finishing an item.
+
 **Custom Base URL** (for proxies):
 
 ```json
@@ -112,9 +315,16 @@ If your model has a strict per-minute request cap, you can slow the scorer down 
 }
 ```
 
+For OpenAI-compatible gateways, Horizon sends `temperature` by default. If a newer reasoning-style model rejects that parameter with an error such as `temperature is deprecated for this model`, Horizon retries once without it and remembers that capability for later requests.
+
 ## Information Sources
 
 All sources are configured under the top-level `sources` key in `config.json`.
+Source entries also accept `profile`. An explicit profile ID uses that profile
+without an AI matching call. If `profile` is missing or set to `"auto"`, Horizon
+matches the item against the loaded profiles. An unknown explicit ID is an
+error. For nested sources, set the field on the item-producing entry, such as an
+RSS feed, Reddit subreddit or user, or OpenBB watchlist.
 
 ### GitHub
 
@@ -125,13 +335,16 @@ All sources are configured under the top-level `sources` key in `config.json`.
       {
         "type": "user_events",
         "username": "gvanrossum",
-        "enabled": true
+        "enabled": true,
+        "category": "oss",
+        "profile": "tech-news"
       },
       {
         "type": "repo_releases",
         "owner": "python",
         "repo": "cpython",
-        "enabled": true
+        "enabled": true,
+        "category": "oss"
       }
     ]
   }
@@ -146,7 +359,8 @@ All sources are configured under the top-level `sources` key in `config.json`.
     "hackernews": {
       "enabled": true,
       "fetch_top_stories": 30,
-      "min_score": 100
+      "min_score": 100,
+      "category": "tech"
     }
   }
 }
@@ -162,7 +376,8 @@ All sources are configured under the top-level `sources` key in `config.json`.
         "name": "Blog Name",
         "url": "https://example.com/feed.xml",
         "enabled": true,
-        "category": "ai-ml"
+        "category": "ai-ml",
+        "profile": "auto"
       }
     ]
   }
@@ -170,6 +385,8 @@ All sources are configured under the top-level `sources` key in `config.json`.
 ```
 
 ### Reddit
+
+Reddit scraping is free and does not require API keys. Subreddit posts and comments prefer `old.reddit.com`; JSON and RSS endpoints are used as fallbacks when needed.
 
 ```json
 {
@@ -182,20 +399,50 @@ All sources are configured under the top-level `sources` key in `config.json`.
           "subreddit": "MachineLearning",
           "sort": "hot",
           "fetch_limit": 25,
-          "min_score": 10
+          "min_score": 10,
+          "category": "ai-ml"
         }
       ],
       "users": [
         {
           "username": "spez",
           "sort": "new",
-          "fetch_limit": 10
+          "fetch_limit": 10,
+          "category": "social"
         }
       ]
     }
   }
 }
 ```
+
+### Telegram
+
+Telegram scraping uses the public web preview at `https://t.me/s/<channel>`, so no API key is required. Only public channels are supported.
+
+```json
+{
+  "sources": {
+    "telegram": {
+      "enabled": true,
+      "channels": [
+        {
+          "channel": "zaihuapd",
+          "enabled": true,
+          "fetch_limit": 20,
+          "category": "ai-news"
+        }
+      ]
+    }
+  }
+}
+```
+
+- `enabled` — enable or disable Telegram fetching globally
+- `channels` — list of public Telegram channels to monitor
+- `channel` — Telegram channel username only, without `@` or the full `https://t.me/` URL
+- `fetch_limit` — maximum number of recent messages to inspect per channel per run (default: `20`)
+- `category` — optional tag for balanced digest grouping (e.g., `"ai-news"`, `"finance"`)
 
 ### Twitter
 
@@ -208,6 +455,7 @@ Requires an [Apify](https://apify.com) account. Set `APIFY_TOKEN` in your `.env`
       "enabled": true,
       "users": ["karpathy", "ylecun"],
       "fetch_limit": 10,
+      "category": "social",
       "fetch_reply_text": false,
       "max_replies_per_tweet": 3,
       "max_tweets_to_expand": 10,
@@ -219,6 +467,7 @@ Requires an [Apify](https://apify.com) account. Set `APIFY_TOKEN` in your `.env`
 
 - `users` — Twitter screen names to monitor, without the `@` prefix
 - `fetch_limit` — maximum tweets to fetch per run (across all users combined; minimum 100 due to actor constraint)
+- `category` — optional tag for balanced digest grouping (applies to all tweets from this source)
 - `fetch_reply_text` — when `true`, fetch actual reply bodies for important tweets and append them under `--- Top Comments ---` so the AI can factor in community discussion. Disabled by default.
 - `max_replies_per_tweet` — maximum reply lines to append per tweet (default: 3)
 - `max_tweets_to_expand` — cap on how many tweets get reply expansion per run, to control Apify credit usage (default: 10)
@@ -226,41 +475,189 @@ Requires an [Apify](https://apify.com) account. Set `APIFY_TOKEN` in your `.env`
 
 The scraper uses the `altimis/scweet` actor by default. You can override it with `actor_id` if needed.
 
-## Filtering
+### OpenBB Financial News
 
-Content is scored 0-10:
+OpenBB is useful when you want equity or macro news from providers such as yfinance, Benzinga, FMP, Intrinio, Tiingo, SEC, or Federal Reserve through one SDK.
 
-- **9-10**: Groundbreaking - Major breakthroughs, paradigm shifts
-- **7-8**: High Value - Important developments, deep technical content
-- **5-6**: Interesting - Worth knowing but not urgent
-- **3-4**: Low Priority - Generic or routine content
-- **0-2**: Noise - Spam, off-topic, or trivial
+Install the optional dependency before enabling the source:
+
+```bash
+uv sync --extra openbb
+```
+
+If your platform struggles to build transitive dependencies, prefer:
+
+```bash
+uv pip install --only-binary=:all: openbb openbb-benzinga
+```
 
 ```json
 {
-  "filtering": {
-    "ai_score_threshold": 7.0,
+  "sources": {
+    "openbb": {
+      "enabled": true,
+      "watchlists": [
+        {
+          "name": "megacaps",
+          "enabled": true,
+          "provider": "yfinance",
+          "fetch_limit": 20,
+          "category": "equities",
+          "symbols": ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA"]
+        }
+      ]
+    }
+  }
+}
+```
+
+- `enabled` — enable or disable the OpenBB source globally
+- `watchlists` — list of named ticker groups; each watchlist becomes one `news.company()` call per run
+- `name` — label shown in Horizon metadata and selection breakdowns
+- `provider` — OpenBB provider name such as `yfinance` or `benzinga`
+- `fetch_limit` — maximum news rows requested for that watchlist
+- `category` — optional tag stored on fetched items
+- `symbols` — ticker symbols to fetch together; group symbols by provider to keep requests efficient
+
+OpenBB provider credentials are handled by the OpenBB SDK itself, using its own environment variables or user settings. Horizon does not pass those secrets through the active config file.
+
+### OSS Insight (Trending GitHub Repos)
+
+Pulls top star-gain repositories from the [OSS Insight](https://ossinsight.io) public API, which aggregates GitHub WatchEvents. Useful for surfacing repos that are gaining stars right now without needing to scrape GitHub Trending or query BigQuery.
+
+```json
+{
+  "sources": {
+    "ossinsight": {
+      "enabled": true,
+      "period": "past_24_hours",
+      "languages": ["All", "Python", "TypeScript"],
+      "keywords": [],
+      "min_stars": 10,
+      "max_items": 30,
+      "category": "oss-trending"
+    }
+  }
+}
+```
+
+- `period` — time window for star-gain ranking. Supported: `past_24_hours`, `past_28_days`. (`past_7_days` is currently broken upstream.)
+- `languages` — primary language buckets to query. Use `"All"` for the full ranking, or any GitHub language label such as `"Python"`, `"TypeScript"`, `"Rust"`, `"Jupyter Notebook"`. The scraper fans out one request per language and merges results.
+- `keywords` — optional case-insensitive substrings matched against `description`, `collection_names`, and `repo_name`. Only repos containing at least one keyword pass through. Leave empty to ingest everything trending.
+- `min_stars` — drop repos with fewer than this many stars gained in the period.
+- `max_items` — final cap after merging and sorting by `stars_gained` descending.
+- `category` — optional tag for balanced digest grouping (e.g., `"oss-trending"`)
+
+No API key is required.
+
+## Filtering
+
+Score filtering is configured under `processing.profile_settings` in the runtime
+configuration. Each profile can use a different `threshold`; set it to `null` or
+omit that profile's settings to disable score filtering. See [Processing
+Profiles](profiles.md#filtering) and [Scoring](scoring.md).
+
+The runtime `collection` section controls the fetch window and contains only
+`time_window_hours`:
+
+```json
+{
+  "collection": {
     "time_window_hours": 24
   }
 }
 ```
 
-- `ai_score_threshold`: Only include content scoring >= this value
 - `time_window_hours`: Fetch content from last N hours
 
-## Environment Variable Substitution
-
-RSS feed URLs support `${VAR_NAME}` syntax for secrets. The variable is expanded at runtime from environment variables (or `.env` file):
+The runtime `digest` section controls final section order and optional balanced
+digest limits:
 
 ```json
 {
-  "name": "LWN.net",
-  "url": "https://lwn.net/headlines/full_text?key=${LWN_KEY}",
-  "enabled": true
+  "digest": {
+    "max_items": 20,
+    "profile_order": ["tech-news", "tech-blog", "finance-news"],
+    "category_groups": {
+      "ai": {
+        "name": "AI / Machine Learning",
+        "limit": 5,
+        "categories": ["ai-news", "ai-tools", "machine-learning", "llm"]
+      },
+      "finance": {
+        "name": "Finance",
+        "limit": 5,
+        "categories": ["finance", "equities", "crypto"]
+      }
+    },
+    "default_group": "other",
+    "default_group_limit": 3
+  }
 }
 ```
 
-This way `config.json` can be committed to a public repo without leaking tokens.
+- `max_items`: Optional final cap after all group limits are applied
+- `profile_order`: Optional final-summary section priority. Loaded profiles not
+  listed here are appended automatically in profile discovery order. Unknown or
+  duplicate profile IDs are rejected. The example prioritizes the three listed
+  profiles in that order.
+- `category_groups`: Optional map of quota groups. Each group requires a positive
+  `limit` and a non-empty `categories` list. Items within each group are kept by
+  analysis score, highest first.
+- `category_groups.*.name`: Optional display name used in run logs
+- `default_group`: Group key for items whose category does not match any
+  configured group. Default is `other`.
+- `default_group_limit`: Optional positive limit for unmatched items. If omitted,
+  unmatched items are unlimited except for `max_items`.
+
+Balanced digest filtering runs after configured profile filtering and topic
+deduplication, but before enrichment. This reduces enrichment calls to only the
+items that can appear in the final digest.
+
+Group matching uses the source category stored in `ContentItem.metadata.category`.
+All source types support a `category` field: `sources.rss[].category`,
+`sources.github[].category`, `sources.hackernews.category`,
+`sources.reddit.subreddits[].category`, `sources.reddit.users[].category`,
+`sources.telegram.channels[].category`, `sources.twitter.category`,
+`sources.openbb.watchlists[].category`, `sources.ossinsight.category`,
+`sources.gdelt.category`, and `sources.google_news.category`.
+Sources without a category set enter the default group.
+
+If the same category appears in multiple groups, Horizon logs a warning and uses
+the first group in configuration order. Omitting both `category_groups` and
+`max_items` disables balanced digest limits; configured profile thresholds still
+apply.
+
+## Environment Variable Substitution
+
+Any string value in the active config file supports `${VAR_NAME}` syntax. Variables are expanded at runtime from the environment (including values loaded from `.env`). This lets you keep secrets, tenant-specific endpoints, and private URLs out of the checked-in JSON file.
+
+Example:
+
+```json
+{
+  "ai": {
+    "base_url": "${HORIZON_AI_BASE_URL}"
+  },
+  "sources": {
+    "rss": [
+      {
+        "name": "LWN.net",
+        "url": "https://lwn.net/headlines/full_text?key=${LWN_KEY}",
+        "enabled": true
+      }
+    ]
+  },
+  "webhook": {
+    "url_env": "HORIZON_WEBHOOK_URL",
+    "headers": "Authorization: Bearer ${HORIZON_WEBHOOK_TOKEN}"
+  }
+}
+```
+
+- `${NAME}` is replaced only when `NAME` is a valid identifier like `LWN_KEY` or `HORIZON_AI_BASE_URL`.
+- Unset variables are left as `${NAME}` instead of becoming an empty string, so configuration mistakes fail loudly downstream.
+- Expansion is recursive through dicts, lists, and tuples; non-string values are left unchanged.
 
 ## Email Subscription
 
@@ -272,6 +669,8 @@ Email delivery is optional and disabled unless `email.enabled` is `true`. Horizo
     "enabled": true,
     "smtp_server": "smtp.qq.com",
     "smtp_port": 465,
+    "smtp_username": null,
+    "imap_enabled": true,
     "imap_server": "imap.qq.com",
     "imap_port": 993,
     "email_address": "xxx@qq.com",
@@ -285,11 +684,34 @@ Email delivery is optional and disabled unless `email.enabled` is `true`. Horizo
 
 - `enabled`: Turns email subscription handling and daily email delivery on or off.
 - `smtp_server` / `smtp_port`: SMTP server used to send emails.
-- `imap_server` / `imap_port`: IMAP server used to scan incoming subscription requests.
+- `smtp_username`: Optional SMTP login username. If omitted, Horizon uses `email_address`.
+- `imap_enabled`: Turns IMAP subscribe/unsubscribe checks on or off. Set it to `false` for send-only SMTP providers.
+- `imap_server` / `imap_port`: IMAP server used to scan incoming subscription requests when `imap_enabled` is `true`.
 - `email_address`: Sender account and mailbox checked for subscription requests.
 - `password_env`: Environment variable containing the email password or app password. Defaults to `EMAIL_PASSWORD`.
 - `sender_name`: Display name shown in sent emails.
 - `subscribe_keyword` / `unsubscribe_keyword`: Keywords Horizon looks for in incoming email subjects.
+
+Resend SMTP example:
+
+```json
+{
+  "email": {
+    "enabled": true,
+    "smtp_server": "smtp.resend.com",
+    "smtp_port": 465,
+    "smtp_username": "resend",
+    "password_env": "RESEND_API_KEY",
+    "imap_enabled": false,
+    "imap_server": "",
+    "imap_port": 993,
+    "email_address": "noreply@example.com",
+    "sender_name": "Horizon Daily"
+  }
+}
+```
+
+Set `RESEND_API_KEY` in `.env`. Recipients are loaded from `<data-dir>/subscribers.json` (`data/subscribers.json` by default).
 
 ## Webhook Notification
 
@@ -327,6 +749,40 @@ Webhook notification is optional and disabled unless `webhook.enabled` is `true`
 
 When `request_body` is a JSON object or array, Horizon renders placeholders and serializes it as JSON. When it is a string, Horizon renders it directly and detects JSON if the rendered string is valid JSON.
 
+### Delivery Modes And Layouts
+
+`delivery` controls how many webhook messages Horizon sends:
+
+- `summary`: Sends one message containing the full daily summary. This is simple, but some chat platforms may reject long messages.
+- `summary_and_items`: Sends one overview message plus one message per selected item. In each item message, `#{summary}` contains only that item's Markdown body. This is useful for platforms that reject or truncate long messages.
+
+`layout` controls how each message is rendered:
+
+- `markdown`: Uses your `request_body` template for each message. This is the default and works with generic webhooks, DingTalk, Slack, Discord, Feishu, and Lark.
+- `collapsible`: Currently supported for `platform: "feishu"` or `"lark"`. Horizon ignores `request_body` and builds one Feishu/Lark Card JSON 2.0 message with each item in a collapsed panel.
+
+For platforms without a platform-specific layout, keep `layout: "markdown"` and choose the message count with `delivery`.
+
+Example `summary_and_items` Markdown delivery config:
+
+```json
+{
+  "webhook": {
+    "enabled": true,
+    "url_env": "HORIZON_WEBHOOK_URL",
+    "delivery": "summary_and_items",
+    "overview_position": "last",
+    "platform": "generic",
+    "layout": "markdown",
+    "request_body": {
+      "text": "#{message_title}\n\n#{summary?limit=3000&split=---}"
+    }
+  }
+}
+```
+
+With `summary_and_items`, Horizon sends one overview plus one message per selected item. `overview_position: "last"` sends item messages first and keeps the overview as the newest chat message; omit it or set `"first"` to send the overview first.
+
 ### Webhook Templates
 
 Available variables:
@@ -335,7 +791,7 @@ Available variables:
 |----------|-------------|
 | `#{date}` | Report date, for example `2026-04-24` |
 | `#{language}` | Language code, such as `en` or `zh` |
-| `#{important_items}` | Number of items that passed the score threshold |
+| `#{important_items}` | Number of items selected by profile filtering |
 | `#{all_items}` | Total number of fetched items |
 | `#{result}` | `success` or `failed` |
 | `#{timestamp}` | Unix timestamp |
@@ -349,9 +805,13 @@ When `delivery` is `summary_and_items`, item messages also include:
 |----------|-------------|
 | `#{item_index}` | 1-based item number |
 | `#{item_count}` | Total number of item messages |
+| `#{profile_item_index}` | 1-based item number within the current Profile |
+| `#{profile_item_count}` | Number of item messages in the current Profile |
+| `#{item_profile}` | Current Profile ID |
+| `#{item_profile_name}` | Localized current Profile name |
 | `#{item_title}` | Current item title |
 | `#{item_url}` | Current item URL |
-| `#{item_score}` | Current item AI score |
+| `#{item_score}` | Current item analysis score |
 
 For webhook delivery, Horizon flattens HTML disclosure blocks such as `<details><summary>...</summary>` in `#{summary}` into plain Markdown link lists. This makes the generated summary easier to render in chat products. Saved Markdown files, GitHub Pages, and email content are unchanged.
 
@@ -432,9 +892,27 @@ With this layout, Horizon sends one interactive card containing the overview and
 }
 ```
 
+### Testing
+
+Use `horizon-webhook` to preview or send a test notification without running the full pipeline:
+
+```bash
+uv run horizon-webhook --dry-run
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--lang LANG` | first configured language | Language to test |
+| `--dry-run` | off | Preview rendered content without sending |
+| `--delivery {summary,summary_and_items}` | value from config | Override delivery mode for this test |
+| `-d`, `--data-dir PATH` | `data` | Path to the data directory |
+| `-c`, `--config PATH` | `<data-dir>/config.json` | Path to config file |
+| `-l`, `--log-level LEVEL` | `WARNING` | Logging level (DEBUG/INFO/WARNING/ERROR/CRITICAL) |
+
+
 ## Static Site
 
-Horizon writes generated summaries to `data/summaries/` and copies publishable Markdown into `docs/` for the GitHub Pages site. The repository includes a ready-to-use workflow at `.github/workflows/daily-summary.yml`.
+Horizon writes generated summaries to `data/summaries/` (or `<data-dir>/summaries/` when `--data-dir` is set) and copies publishable Markdown into `docs/` for the GitHub Pages site. The repository includes a ready-to-use workflow at `.github/workflows/daily-summary.yml`.
 
 To use GitHub Pages, enable Pages for the repository and run the scheduled workflow or trigger it manually. The generated site is built from the `docs/` directory.
 

@@ -1,8 +1,8 @@
 theme: jekyll-theme-cayman
 title: Horizon Daily
 description: AI-curated daily digest of tech and research news
-baseurl: "" # custom domain is served from site root
-url: "https://horizon.12161216.xyz" # custom domain for this deployment
+baseurl: "/Horizon" # the subpath of your site, e.g. /blog
+url: "https://thysrael.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 
 # Build settings
 markdown: kramdown
