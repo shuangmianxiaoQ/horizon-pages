@@ -6,132 +6,183 @@ lang: zh
 ---
 
 
-> 从 23 条内容中筛选出 6 条重要资讯。
+> 从 33 条内容中筛选出 8 条重要资讯。
 
 ---
 
-**Twitter 动态**
-1. [多智能体 v2 模型现可委派至任意受支持模型，包括 Luna](#item-twitter-1) ⭐️ 7.0/10
+**GitHub 动态**
+1. [Soup：用 YAML 微调 LLM，在 4GB 笔记本 GPU 上训练 8B 模型](#item-github-1) ⭐️ 8.0/10
+2. [清华开源 OpenMAIC：多智能体互动课堂平台](#item-github-2) ⭐️ 8.0/10
+3. [Dub：开源链接归因平台，支持短链接、转化跟踪与联盟计划](#item-github-3) ⭐️ 7.0/10
+4. [OpenSign：开源 DocuSign 替代方案，提供安全电子签名](#item-github-4) ⭐️ 7.0/10
+5. [IBM Carbon 设计系统：开源组件库与设计资源](#item-github-5) ⭐️ 7.0/10
 
 **AI 创作者雷达**
-1. [Anthropic 分享 Claude Code 六大省钱技巧，提示缓存可省 90% 成本](#item-ai-creator-1) ⭐️ 7.0/10
-2. [阿里开放权重模型半年下载量超 30 亿，超越 Meta 和谷歌](#item-ai-creator-2) ⭐️ 7.0/10
-3. [ZCode 推出 GLM-5.3 周末活动，新用户可领 1 亿 tokens](#item-ai-creator-3) ⭐️ 3.0/10
+1. [阿里开放权重模型下载量超 30 亿，半年内超越 Meta 和谷歌](#item-ai-creator-1) ⭐️ 7.0/10
 
 **财经新闻**
-1. [中国拟解除 Manus 创始人出境限制，前投资者及管理层拟以约 20 亿美元估值回购](#item-finance-news-1) ⭐️ 7.0/10
-2. [美国据报要求盟友在 AI 合作中选边，签署 Pax Silica 宣言](#item-finance-news-2) ⭐️ 7.0/10
+1. [Anthropic 第二季初步营收超 115 亿美元，同比增长逾 14 倍](#item-finance-news-1) ⭐️ 8.0/10
+2. [网传动画电影《牛来》被强制下线，预测票房或受影响](#item-finance-news-2) ⭐️ 4.0/10
 
 ---
 
-## Twitter 动态
+## GitHub 动态
 
-<a id="item-twitter-1"></a>
-### [多智能体 v2 模型现可委派至任意受支持模型，包括 Luna](https://x.com/thsottiaux/status/2088641056237580632) ⭐️ 7.0/10
+<a id="item-github-1"></a>
+### [Soup：用 YAML 微调 LLM，在 4GB 笔记本 GPU 上训练 8B 模型](https://github.com/MakazhanAlpamys/Soup) ⭐️ 8.0/10
 
-本周，官方宣布多智能体 v2 模型现已能够委派任务至任何受支持的模型，包括 Luna。该功能经过一段时间开发以确保可靠性，但未提供技术细节或基准测试。此更新面向开发者，属于增量改进而非突破性变化。
+Soup 是一个基于 YAML 配置的命令行工具，旨在简化 LLM 的微调与后训练流程。其核心特性是层流式（layer streaming）技术，可将基础模型逐层从显存中移出，从而在仅 4GB 显存的笔记本 GPU（如 RTX 3050 Laptop）上微调 8B 参数模型（如 Llama-3.1-8B-Instruct），实测峰值显存 3.32GB，吞吐 119.6 tok/s（v0.72.2 测量，v0.73.0 修复后未在 4GB 卡上复测）。该功能为可选（\`stream\_layers: true\`），仍处于 BETA 阶段。项目支持 QLoRA、偏好损失（DPO/ORPO/SimPO/KTO）等，并提供了论文（DOI: 10.5281/zenodo.21771064）和可复现的 Colab 笔记本。最新版本 v0.73.2 修复了发布门控（\`soup ship\`）的评分错误，新增了良性提示轴和噪声底限检测。
 
-twitter · thsottiaux · 8月15日 14:56
+rss · GitHub Trending · All Languages · 8月16日 02:18
 
-**「背景」** 该公告来自官方账号，表明多智能体 v2 模型此前可能仅支持委派至特定模型，此次更新扩展了委派范围。
+**「背景」** Soup 是一个基于 YAML 配置的 CLI 工具，旨在简化大语言模型（LLM）的微调流程。其核心特性是层流式（layer streaming）技术，通过将冻结的基础模型逐层从 CPU 内存或 NVMe 磁盘流式传输到 GPU，显著降低显存占用，从而在 4 GB 显存的笔记本 GPU 上微调 8B 参数模型。该项目提供详细的性能基准、论文和可复现的 Colab 笔记本，并持续活跃开发（当前版本 v0.73.2）。
 
-**「影响」** 开发者现在可以在多智能体 v2 架构中更灵活地选择委派模型，包括 Luna，从而可能优化特定任务的性能或成本。但公告未说明具体支持条件或性能表现，实际效果需进一步验证。
+**「影响与采用建议」** 对于资源受限的开发者，Soup 降低了 LLM 微调的门槛，无需 SSH 或云 GPU 即可在本地进行实验。采用时需注意：仅支持 Python 3.10–3.12（v0.73.0 起限制 3.13+，避免未测试的 PyTorch wheel）；层流式功能为 BETA，且 v0.72.0 训练的适配器存在键名问题（\`.inner.\` 段），需重新训练或保存。升级到 v0.73.2 可修复发布门控的误判，但需注意 \`--noise-floor\` 仅用于评估效应大小，不校准阈值。
 
-**标签**: `#multi-agent`, `#model delegation`, `#Luna`, `#AI capability`, `#developer update`
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://github.com/MakazhanAlpamys/Soup">GitHub - MakazhanAlpamys/Soup: Fine-tune LLMs from one YAML. Layer streaming trains an 8B model on a 4 GB laptop GPU. · GitHub</a></li>
+<li><a href="https://trysoup.dev/">Soup CLI — Build, expect, train, x-ray, merge, bisect, ship — one CLI</a></li>
+<li><a href="https://huntscreens.com/products/soup-cli">Soup: Open-Source LLM Fine-Tuning with Layer Streaming</a></li>
+
+</ul>
+</details>
+
+**标签**: `#LLM fine-tuning`, `#AI tools`, `#GPU optimization`, `#CLI`, `#QLoRA`
+
+---
+
+<a id="item-github-2"></a>
+### [清华开源 OpenMAIC：多智能体互动课堂平台](https://github.com/THU-MAIC/OpenMAIC) ⭐️ 8.0/10
+
+OpenMAIC（Open Multi-Agent Interactive Classroom）是清华大学推出的开源多智能体互动课堂平台，可将任意主题或文档一键转化为包含幻灯片、测验、交互式模拟和项目式学习（PBL）的沉浸式课程，由 AI 教师和 AI 同学实时讲解、讨论和互动。项目基于 Next.js 16、React 19、TypeScript 5、LangGraph 1.1 和 Tailwind CSS 4 构建，支持白板绘图、TTS 语音、可编辑 .pptx 和交互式 .html 导出，并集成 OpenClaw 以便从飞书、Slack、Telegram 等 20+ 消息应用生成课堂。近期 v0.3.x 系列版本新增了 MP4 视频导出、服务端持久化（Postgres 参考实现）、@openmaic/\* SDK 家族（DSL/renderer/importer）发布至 npm、PBL v2 课堂 UI、多语言支持（含韩语、繁体中文、巴西葡萄牙语等）以及多个新模型和提供商（如 Amazon Bedrock、Atlas Cloud、Claude search、Azure OpenAI、SearXNG、ComfyUI、GPT-5.6 等）。项目采用 MIT 许可证，提供在线演示（open.maic.chat）和论文（JCST&\#x27;26），并有 Discord 和飞书社区。
+
+rss · GitHub Trending · TypeScript · 8月16日 02:36
+
+**「项目背景」** OpenMAIC（Open Multi-Agent Interactive Classroom）是清华大学开发的开源 AI 平台，可将任意主题或文档转化为沉浸式的多智能体互动课堂体验。平台基于 TypeScript、Next.js、React 和 LangGraph 构建，支持生成幻灯片、测验、交互式模拟和项目式学习（PBL）内容，并提供 AI 教师与 AI 同学进行实时讨论、白板演示和语音讲解。项目已发布 v0.3.2 版本，新增视频导出、服务端持久化、SDK 家族（@openmaic/\*）等功能，并已从 AGPL-3.0 重新授权为 MIT 许可证。
+
+**「影响与采用建议」** 对于教育科技开发者和 AI 应用构建者，OpenMAIC 提供了一个可直接部署或二次开发的完整多智能体课堂解决方案，其 SDK 家族和模块化架构降低了集成成本。v0.3.2 起服务端持久化已全面切换，部署时需配置 Postgres（提供一键启动栈）；视频导出功能支持确定性测验/PBL 封面和交互式 HTML 捕获，适合生成可分享的教学内容。项目支持多种 LLM 提供商（至少配置一个 API 密钥），并可通过 Vercel 一键部署，但生产环境需注意 SSRF 加固（已在 v0.3.1 中加强）和访问控制（ACCESS\_CODE 认证）。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://openmaic.io/">OpenMAIC — Open Multi-Agent Interactive Classroom by Tsinghua University</a></li>
+<li><a href="https://openmaic.chat/">OpenMAIC - Open Multi-Agent Interactive Classroom</a></li>
+<li><a href="https://github.com/THU-MAIC/OpenMAIC">GitHub - THU-MAIC/OpenMAIC: Open Multi-Agent Interactive Classroom — Get an immersive, multi-agent learning experience in just one click</a></li>
+
+</ul>
+</details>
+
+**标签**: `#AI`, `#education`, `#multi-agent`, `#TypeScript`, `#Next.js`
+
+---
+
+<a id="item-github-3"></a>
+### [Dub：开源链接归因平台，支持短链接、转化跟踪与联盟计划](https://github.com/dubinc/dub) ⭐️ 7.0/10
+
+Dub 是一个现代化的开源链接归因平台，专注于短链接、转化跟踪和联盟计划。该项目基于 Next.js 和 TypeScript 构建，采用 Turborepo 管理 monorepo，并使用 Prisma、Upstash、Tinybird、PlanetScale 等现代技术栈。平台每月处理超过 1 亿次点击和 200 万个链接，被 Twilio、Buffer、Framer、Perplexity、Vercel 等公司的营销团队采用。Dub 采用 Open Core 模式，核心代码（约 99%）以 AGPLv3 许可证开源，而企业版功能（如 SAML/SSO）则需商业许可。项目支持自托管，推荐使用 Node v23.11.0 和 pnpm 9.15.9 进行本地开发。
+
+rss · GitHub Trending · TypeScript · 8月16日 02:36
+
+**「背景」** 链接归因是营销技术中的关键环节，用于追踪短链接的点击来源、转化效果和联盟伙伴的贡献。Dub 作为开源替代方案，为团队提供了对数据和设计的完全控制，同时避免了商业 SaaS 的锁定。
+
+**「影响」** 对于开发者和运营团队，Dub 提供了可自托管的链接管理解决方案，能够满足数据隐私和定制化需求。采用 Open Core 模式意味着核心功能免费，但企业级功能（如 SAML/SSO）需要商业许可，大型组织在评估时需考虑这一成本。自托管部署需要匹配推荐的 Node 和 pnpm 版本，并注意数据库迁移（如运行 \`pnpm prisma:push\`）和本地构建问题。
+
+**标签**: `#link-attribution`, `#open-source`, `#nextjs`, `#typescript`, `#self-hosting`
+
+---
+
+<a id="item-github-4"></a>
+### [OpenSign：开源 DocuSign 替代方案，提供安全电子签名](https://github.com/OpenSignLabs/OpenSign) ⭐️ 7.0/10
+
+OpenSign 是一个免费、开源的文档电子签名平台，旨在作为 DocuSign、PandaDoc、Adobe Sign 等商业工具的全面替代方案。该项目提供安全 PDF 电子签名、多签署人支持（含顺序签署）、访客 OTP 邮箱验证、文档注释、模板创建、到期与拒绝功能、审计追踪及完成证书、API 支持以及云存储和 CRM 集成。部署方式包括 Docker（提供 Linux/macOS 和 Windows 命令）和 DigitalOcean 一键部署，但默认 MongoDB 实例不持久化，需自行配置外部 MongoDB 以保留数据。项目在 GitHub 上活跃维护，提供官方文档、API 文档和社区支持渠道。
+
+rss · GitHub Trending · JavaScript · 8月16日 02:26
+
+**「背景」** OpenSign 是一个免费且开源的电子签名平台，旨在作为 DocuSign 等商业工具的替代方案。它提供多签署人支持、OTP 验证、模板、审计追踪和 API 集成等功能，并支持通过 Docker 或 DigitalOcean 进行自托管部署。该项目在 GitHub 上持续活跃维护，适合需要自主控制签名流程的开发者或企业。
+
+**「影响与采用建议」** 对于寻求替代商业电子签名服务的开发者和企业，OpenSign 提供了一个可自托管的免费选项，降低了成本并增强数据控制。其 API 支持便于集成到现有系统，而模板和审计功能可提升文档处理效率。采用时需注意默认 MongoDB 非持久化，生产环境应配置外部数据库；同时，项目虽功能丰富，但缺乏大规模采用证据，评估时应结合自身安全与合规需求进行测试。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://www.opensignlabs.com/">OpenSign™ | The Free &amp; OpenSource Alternative to Docusign</a></li>
+<li><a href="https://github.com/opensignlabs/opensign">GitHub - OpenSignLabs/OpenSign: 🔥 The free &amp; Open Source DocuSign alternative</a></li>
+
+</ul>
+</details>
+
+**标签**: `#open-source`, `#e-signature`, `#developer-tools`, `#frontend`, `#productivity`
+
+---
+
+<a id="item-github-5"></a>
+### [IBM Carbon 设计系统：开源组件库与设计资源](https://github.com/carbon-design-system/carbon) ⭐️ 7.0/10
+
+Carbon 是 IBM 的开源设计系统，用于构建产品与体验。该 monorepo 包含 React 组件库（@carbon/react）、基于标准的 Web Components（@carbon/web-components）、Sass 样式（@carbon/styles）、设计令牌（@carbon/themes、@carbon/type、@carbon/layout、@carbon/motion）、颜色（@carbon/colors）、图标（@carbon/icons）和象形图（@carbon/pictograms）等包。这些包提供了从基础令牌到组件实现的完整工具链，支持开发者创建一致的企业级界面。项目遵循 OpenSSF 最佳实践，并拥有活跃的社区（Discord）。
+
+rss · GitHub Trending · JavaScript · 8月16日 02:26
+
+**「背景」** 设计系统是现代前端开发中确保跨产品一致性和可维护性的关键基础设施。Carbon 作为 IBM 的官方设计系统，已被广泛采用，其 monorepo 结构集中管理了多种框架的实现和设计资源。
+
+**「影响」** 对于使用 IBM 设计语言的开发者，Carbon 提供了开箱即用的 React 和 Web Components 组件，以及可定制的设计令牌，有助于加速开发并保持品牌一致性。社区维护的 Angular、Svelte 和 Vue 版本扩展了其适用范围。采用时需注意各包的版本和依赖关系，并参考官方迁移指南进行升级。
+
+**标签**: `#design-system`, `#react`, `#web-components`, `#frontend`, `#IBM`
 
 ---
 
 ## AI 创作者雷达
 
 <a id="item-ai-creator-1"></a>
-### [Anthropic 分享 Claude Code 六大省钱技巧，提示缓存可省 90% 成本](http://claude.md/) ⭐️ 7.0/10
+### [阿里开放权重模型下载量超 30 亿，半年内超越 Meta 和谷歌](https://www.bloomberg.com/news/articles/2026-08-15/alibaba-ai-models-hit-3-billion-downloads-passing-meta-google) ⭐️ 7.0/10
 
-Anthropic 官方发布博客，分享了使用 Claude Code 的六大成本优化技巧，包括在不同任务间运行 /clear、提前锁定模型和推理强度、使用 @ 引用文件、为输出冗长的命令添加静默参数、在休息前运行 /compact，以及将大输出任务交给子代理。官方称输出 token 价格是输入的 5 倍，而提示缓存命中后读取成本仅为正常输入的 0.1 倍，可节省 90% 成本。此外，官方提到开发者日均 token 消耗约 13 美元。这些技巧旨在帮助开发者减少不必要的 token 消耗，从而降低使用成本。
-
-telegram · zaihuapd · 8月15日 11:14
-
-**「为何现在值得关注」** 该内容基于 Anthropic 官方博客，提供了具体、可操作的 Claude Code 成本优化建议，并包含明确的成本数据（如提示缓存可省 90%、输出 token 贵 5 倍、日均消耗约 13 美元）。这些技巧对当前使用 Claude Code 的开发者具有直接实用价值，但需注意这些数据来自官方宣传，实际效果可能因使用场景而异。
-
-**「内容角度」** 可做角度：从官方六大技巧出发，结合开发者实际使用场景，分析哪些技巧最有效、哪些可能被高估，并提醒用户注意官方数据与个人体验的差异。
-
-**标签**: `#Claude Code`, `#成本优化`, `#提示缓存`, `#开发者工具`, `#Anthropic`
-
----
-
-<a id="item-ai-creator-2"></a>
-### [阿里开放权重模型半年下载量超 30 亿，超越 Meta 和谷歌](https://www.bloomberg.com/news/articles/2026-08-15/alibaba-ai-models-hit-3-billion-downloads-passing-meta-google) ⭐️ 7.0/10
-
-据彭博社报道，阿里巴巴的开放权重 AI 模型在过去 6 个月全球下载量超过 30 亿次，超过了 Meta 和谷歌。Hugging Face 报告显示，2026 年谷歌模型下载量为 4.18 亿次，Meta 为 2.27 亿次。阿里表示，其 Qwen 系列已开源超过 460 个模型，并衍生出超过 30 万个版本。这些数据表明阿里在开源 AI 生态中的影响力显著提升，但具体模型的技术细节或对普通用户的影响尚未披露。
+据彭博社报道，阿里巴巴的开放权重 AI 模型在过去 6 个月全球下载量超过 30 亿次，超过了 Meta 和谷歌的模型。Hugging Face 报告显示，2026 年谷歌模型下载量为 4.18 亿次，Meta 为 2.27 亿次。阿里表示，其 Qwen 系列已开源超过 460 个模型，并衍生出超过 30 万个版本。这些数据来自单一报道，具体统计口径和模型范围尚未明确。
 
 telegram · zaihuapd · 8月15日 15:18
 
-**「为何现在关注」** 这一下载量数据凸显了阿里在开源 AI 领域的快速崛起，与 Meta 和谷歌形成对比，可能反映开源社区对 Qwen 模型的接受度上升。不过，下载量本身并不直接等同于实际应用或商业成功，其长期影响仍需观察。
+**「为何现在值得关注」** 该消息表明阿里在开放权重模型领域的影响力显著提升，下载量数据直接反映了开发者社区的采用情况。但需注意，这仅是下载量对比，不代表模型性能或商业成功，且数据为 2026 年，需谨慎看待。
 
-**「内容角度」** 可做角度：从下载量数据切入，分析阿里 Qwen 模型在开源生态中的受欢迎程度，对比 Meta 和谷歌的差距，并探讨下载量指标对开源 AI 竞争格局的意义。注意区分事实与推测，避免夸大性能或给出投资建议。
+**「内容角度」** 可做角度：从下载量数据切入，分析开放权重模型生态的竞争格局变化，探讨阿里 Qwen 生态的扩张对开发者和创作者的实际影响，但需明确区分下载量、性能与商业价值之间的差异。
 
-**标签**: `#阿里巴巴`, `#Qwen`, `#开源模型`, `#下载量`, `#AI生态`
-
----
-
-<a id="item-ai-creator-3"></a>
-### [ZCode 推出 GLM-5.3 周末活动，新用户可领 1 亿 tokens](https://x.com/zcode_ai/status/2088622675606561165) ⭐️ 3.0/10
-
-ZCode 平台于 8 月 16 日 00:00 至 17 日 09:00（UTC+8）期间，为首次登录的新用户提供 1 亿免费 GLM-5.3 tokens，活动仅限 ZCode 平台且名额有限。但随后 ZCode 官方更新称，因活动过于火爆已暂停，目前新用户默认获得 3M tokens。该活动涉及模型 GLM-5.3，但未提供更多技术细节。
-
-telegram · zaihuapd · 8月16日 00:19
-
-**「为何现在关注」** 该活动因用户参与度过高而暂停，反映出市场对 GLM-5.3 模型或免费 token 的强烈需求，但暂停后的具体影响尚未明确。
-
-**「内容角度」** 可做角度：从 ZCode 活动因火爆暂停这一事件切入，探讨 AI 平台免费 token 促销的吸引力与可持续性，以及用户对新兴模型 GLM-5.3 的期待。
-
-**标签**: `#ZCode`, `#GLM-5.3`, `#促销活动`, `#tokens`, `#AI平台`
+**标签**: `#阿里`, `#Qwen`, `#开放权重模型`, `#下载量`, `#AI生态`
 
 ---
 
 ## 财经新闻
 
 <a id="item-finance-news-1"></a>
-### [中国拟解除 Manus 创始人出境限制，前投资者及管理层拟以约 20 亿美元估值回购](https://www.ft.com/content/fa479d50-7c79-4b6d-99c3-3830e37c1503?syn-25a6b1a6=1) ⭐️ 7.0/10
+### [Anthropic 第二季初步营收超 115 亿美元，同比增长逾 14 倍](https://www.cnbc.com/2026/08/15/anthropic-revenue-jumps-to-over-11point5-billion-in-q2-report.html) ⭐️ 8.0/10
 
-据英国《金融时报》报道，中国计划很快解除 Manus 创始人肖弘的出境限制，其前投资者（包括腾讯）及管理层拟以约 20 亿美元估值从 Meta 回购公司，交易尚需监管部门最终批准。
+据彭博社援引的文件，Anthropic 第二季初步营收超过 115 亿美元，较去年同期的 7.87 亿美元增长逾 14 倍，也高于第一季的 47.3 亿美元；当季调整后营业利润转正。这些数字为初步数据，仍可能调整，公司正筹备可能在今秋启动的大型 IPO。
 
-telegram · zaihuapd · 8月15日 08:05
+telegram · zaihuapd · 8月16日 07:26
 
-**「背景」** Manus 是一家中国 AI 初创公司，其联合创始人肖弘和季逸超于 2026 年 3 月被禁止出境，此前中国监管机构叫停了 Meta 对该公司的收购交易。此次拟议的回购是这一监管干预的后续进展。
+**「背景」** Anthropic 是开发 Claude 聊天机器人的 AI 公司，其营收此前已快速增长，2026 年第一季度营收为 47.3 亿美元。此次公布的为初步数据，未经审计，最终数字可能调整。
 
-**「影响」** 若交易完成，腾讯将成为 Manus 最大股东但仅持少数股权，Manus 将继续在新加坡独立运营，这可能影响其未来业务方向及与腾讯的协同。
+**「影响」** 若初步数据得以确认，Anthropic 的强劲增长和盈利转正可能增强投资者对 AI 行业的信心，并为其潜在的 IPO 估值提供支撑。
 
 <details><summary>参考链接</summary>
 <ul>
-<li><a href="https://www.techtimes.com/articles/320160/20260711/tencent-lead-2b-manus-buyback-beijing-treats-agentic-ai-sovereign-asset.htm">Tencent to Lead $2B Manus Buyback as Beijing Treats Agentic AI as Sovereign Asset</a></li>
-<li><a href="https://finance.yahoo.com/technology/ai/articles/manus-returns-independence-china-blocks-170145849.html">Manus returns to independence after China blocks Meta acquisition</a></li>
+<li><a href="https://fortune.com/2026/08/15/anthropic-revenue-q2-11-5-billion-ipo-investors/">Anthropic revenue surges to over $11.5 billion in second quarter | Fortune</a></li>
+<li><a href="https://www.cnbc.com/2026/08/15/anthropic-revenue-jumps-to-over-11point5-billion-in-q2-report.html">Anthropic revenue jumps to over $11.5 billion in Q2: report</a></li>
 
 </ul>
 </details>
 
-**标签**: `#Manus`, `#Tencent`, `#buyback`, `#China regulation`, `#AI industry`
+**标签**: `#Anthropic`, `#AI industry`, `#earnings`, `#IPO`, `#revenue growth`
 
 ---
 
 <a id="item-finance-news-2"></a>
-### [美国据报要求盟友在 AI 合作中选边，签署 Pax Silica 宣言](https://www.neowin.net/news/us-warns-allied-nations-side-with-us-in-the-ai-race-against-china-or-face-the-consequences/) ⭐️ 7.0/10
+### [网传动画电影《牛来》被强制下线，预测票房或受影响](https://www.sina.cn/news/detail/5332509056565565.html) ⭐️ 4.0/10
 
-据美国国务院一份信函草案，美国正要求盟友及希望与其开展 AI 合作的国家签署“Pax Silica”宣言，加入美国主导的 AI 联盟，并承诺不加入相冲突的重复倡议，否则可能被排除在联盟之外。该消息基于报道，尚未得到官方确认。
+网传动画电影《牛来》收到院线通知将被强制停止排片并下线，目前该片票房已达 250 万元，预测票房为 1800 万元；若消息属实，这一预测可能无法实现。该消息尚未得到官方证实。
 
-telegram · zaihuapd · 8月16日 02:30
+telegram · zaihuapd · 8月16日 07:39
 
-**「背景」** Pax Silica 是美国主导的一项倡议，旨在构建安全、有韧性的技术合作网络，重点涉及人工智能和稀土领域，以降低对中国的依赖。该倡议由美国国务院协调，于 2025 年 12 月启动，美国与日本、韩国、新加坡、英国和澳大利亚等七国签署了创始宣言。
+**「背景」** 《牛来》是一部动画电影，其票房预测基于当前市场表现。强制下线通常指院线停止放映，可能因政策、内容或市场原因，但具体原因尚未披露。
 
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://en.wikipedia.org/wiki/Pax_Silica">Pax Silica - Wikipedia</a></li>
-<li><a href="https://www.state.gov/pax-silica">Pax Silica - United States Department of State</a></li>
-<li><a href="https://bowergroupasia.com/us-inaugurates-pax-silica-with-seven-allies/">US Inaugurates Pax Silica With Seven Allies | BowerGroupAsia</a></li>
+**「影响」** 若强制下线成真，该片的制片方和发行方将面临票房收入损失，相关投资方可能受影响。
 
-</ul>
-</details>
-
-**标签**: `#US policy`, `#AI`, `#allies`, `#geopolitics`, `#technology`
+**标签**: `#film industry`, `#box office`, `#rumor`, `#China`, `#entertainment`
 
 ---
 
