@@ -2,7 +2,7 @@ theme: jekyll-theme-cayman
 title: Horizon Daily
 description: AI-curated daily digest of tech and research news
 baseurl: "" # custom domain is served from site root
-url: "https://horizon.12161216.xyz" # custom domain for this deployment
+url: "https://horizon.pixidou.com" # custom domain for this deployment
 
 # Build settings
 markdown: kramdown
